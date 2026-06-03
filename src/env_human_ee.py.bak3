@@ -109,9 +109,7 @@ if joystick:
 else:
         # logger.error("No joystick detected")
    print("⚠️ No joystick detected → Keyboard fallback mode")
-
-screen = pygame.display.set_mode((150, 150))
-pygame.display.set_caption("Control Focus")
+   joystick = None
 # --- Initialize LeRobot dataset ---
 def init_lerobot_dataset(repo_path):
     features = {
@@ -229,55 +227,6 @@ def reset_env():
     data.qpos[t_qpos_adr+3:t_qpos_adr+7] = [np.cos(rad), 0.0, 0.0, np.sin(rad)]
     mujoco.mj_forward(model, data)
 
-def keyboard_control():
-    global buttonCooldown
-    pygame.event.pump()
-    keys = pygame.key.get_pressed()
-    now = time.time()
-    
-    dx, dy, dz = 0.0, 0.0, 0.0
-    dr = 0.0
-    trigger_reset = False
-    trigger_record = False
-
-    # 1. 位置控制
-    if keys[pygame.K_w]: dx = MOVE_SPEED * model.opt.timestep       # W: 前
-    if keys[pygame.K_s]: dx = -MOVE_SPEED * model.opt.timestep      # S: 后
-    if keys[pygame.K_a]: dy = MOVE_SPEED * model.opt.timestep       # A: 左
-    if keys[pygame.K_d]: dy = -MOVE_SPEED * model.opt.timestep      # D: 右
-    if keys[pygame.K_SPACE]: dz = MOVE_SPEED * model.opt.timestep   # 空格: 上
-    if keys[pygame.K_LCTRL]: dz = -MOVE_SPEED * model.opt.timestep  # 左Ctrl: 下
-
-    # 2. 旋转控制
-    if keys[pygame.K_q]: dr = ROT_SPEED * model.opt.timestep        # Q: 逆时针
-    if keys[pygame.K_e]: dr = -ROT_SPEED * model.opt.timestep       # E: 顺时针
-
-    # 3. 功能键映射
-    if keys[pygame.K_r]: trigger_reset = True                        # R: 重置
-    if keys[pygame.K_b]: trigger_record = True                       # B: 录制
-
-    # 4. 应用位姿更新
-    data.mocap_pos[mocap_id] += np.array([dx, dy, dz])
-
-    if abs(dr) > 0:
-        q = data.mocap_quat[mocap_id]
-        r_curr = R.from_quat([q[1], q[2], q[3], q[0]])
-        new_q = (R.from_euler('y', dr) * r_curr).as_quat()
-        data.mocap_quat[mocap_id] = [new_q[3], new_q[0], new_q[1], new_q[2]]
-
-    # 5. 功能键防抖响应
-    if now - buttonCooldown > COOLDOWN_SEC:
-        if trigger_reset:
-            buttonCooldown = now
-            reset_env()
-        elif trigger_record:
-            buttonCooldown = now
-            record_toggle()
-
-    # Esc 键控制退出程序
-    return keys[pygame.K_ESCAPE]
-
-
 def joystick_control():
     global buttonCooldown
     if not joystick:
@@ -328,13 +277,8 @@ try:
 
             # IK simulation and physics stepping
             data.ctrl[act_ids] = data.qpos[act_ids]
-            if joystick:
-                if joystick_control(): 
-                    break
-            else:
-                if keyboard_control(): 
-                    break
-
+            if joystick_control():
+                break
             mujoco.mj_step(model, data)
 
             # Check task success

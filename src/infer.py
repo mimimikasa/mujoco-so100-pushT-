@@ -62,12 +62,12 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load pretrained policy
-    policy = DiffusionPolicy.from_pretrained(ckpt_path.absolute())
+    policy = DiffusionPolicy.from_pretrained(str(ckpt_path.resolve()) if ckpt_path.exists() else args.ckpt_path)
     policy.eval()
     policy.to(device)
 
     # Load dataset metadata and build preprocessors
-    dataset_metadata = LeRobotDatasetMetadata(dataset_id.absolute())
+    dataset_metadata = LeRobotDatasetMetadata(str(dataset_id.absolute()) if dataset_id.exists() else args.dataset_id)
     preprocess, postprocess = make_pre_post_processors(
         policy.config,
         dataset_stats=dataset_metadata.stats,

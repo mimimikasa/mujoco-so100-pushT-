@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument(
         "--data-path",
         type=str,
-        default="/home/baqian/qba/pusht/NewData3.9-ee-2d-pos",
+        default="/home/mikasa/pushT-so100/data/so100-pusht",
         help="Path to dataset",
     )
     parser.add_argument(
@@ -88,7 +88,11 @@ def main():
     writer = SummaryWriter(log_dir=str(output_directory / f"runs_{time.strftime('%Y-%m-%d_%H:%M')}"))
     device = torch.device(args.device)
 
-    dataset_metadata = LeRobotDatasetMetadata(data_dir.absolute())
+    # 智能判断：如果用户传的是本地存在的路径则用绝对路径，否则原封不动传给 LeRobot（用于自动拉取线上 HF 数据集）
+    if data_dir.exists():
+        dataset_metadata = LeRobotDatasetMetadata(str(data_dir.absolute()) if data_dir.exists() else str(args.data_path))
+    else:
+        dataset_metadata = LeRobotDatasetMetadata(str(args.data_path))
     features = dataset_to_policy_features(dataset_metadata.features)
 
     image_keys = args.image_keys
@@ -116,7 +120,10 @@ def main():
     for k in output_features.keys():
         delta_timestamps[k] = [i / dataset_metadata.fps for i in cfg.action_delta_indices]
 
-    dataset = LeRobotDataset(data_dir.absolute(), delta_timestamps=delta_timestamps)
+    if data_dir.exists():
+        dataset = LeRobotDataset(str(data_dir.absolute()), delta_timestamps=delta_timestamps)
+    else:
+        dataset = LeRobotDataset(str(args.data_path), delta_timestamps=delta_timestamps)
 
     policy = DiffusionPolicy(cfg)
     policy.train()

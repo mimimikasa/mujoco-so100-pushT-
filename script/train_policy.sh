@@ -1,6 +1,6 @@
 export CUDA_VISIBLE_DEVICES=0
 python src/train.py \
-  --data-path ./data/NewData3.9-ee-2d-pos \
+  --data-path /home/mikasa/pushT-so100/data/so100-pusht/data \
   --output-dir outputs/pusht_diffusion \
   --batch-size 16 \
   --training-steps 13000 \
