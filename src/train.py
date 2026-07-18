@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument(
         "--data-path",
         type=str,
-        default="/home/mikasa/pushT-so100/data/so100-pusht",
+        default="./data/so100-pusht",
         help="Path to dataset",
     )
     parser.add_argument(

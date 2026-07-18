@@ -2,7 +2,7 @@ import os
 import argparse
 
 # Offscreen rendering configuration
-os.environ["MUJOCO_GL"] = "egl"
+os.environ["MUJOCO_GL"] = "glx"
 
 import time
 import threading
@@ -82,7 +82,7 @@ buttonCooldown = 0.0
 COOLDOWN_SEC = 0.3
 
 # --- Load MuJoCo model ---
-XML_PATH = "/home/mikasa/pushT-so100/mujoco_menagerie/human_env.xml"
+XML_PATH = os.path.join(os.path.dirname(__file__), "..", "mujoco_menagerie", "human_env.xml")
 model = mujoco.MjModel.from_xml_path(XML_PATH)
 data = mujoco.MjData(model)
 
@@ -107,9 +107,9 @@ joystick = pygame.joystick.Joystick(0) if pygame.joystick.get_count() > 0 else N
 if joystick:
    joystick.init()
 else:
-        # logger.error("No joystick detected")
    print("⚠️ No joystick detected → Keyboard fallback mode")
 
+# 创建 Pygame 窗口用于摇杆事件处理（无键盘焦点依赖）
 screen = pygame.display.set_mode((150, 150))
 pygame.display.set_caption("Control Focus")
 # --- Initialize LeRobot dataset ---
@@ -231,6 +231,7 @@ def reset_env():
 
 def keyboard_control():
     global buttonCooldown
+    # 每次调用都 pump 事件，确保 Pygame 能捕获键盘状态
     pygame.event.pump()
     keys = pygame.key.get_pressed()
     now = time.time()
@@ -393,7 +394,8 @@ try:
                 cv2.imshow("MuJoCo So100 - Top View", disp_img_top)
                 cv2.imshow("MuJoCo So100 - Side View", disp_img_side)
                 viewer.sync()
-                cv2.waitKey(1)
+
+            cv2.waitKey(1)
 
             # Maintain physics rate
             elapsed = time.time() - step_start
